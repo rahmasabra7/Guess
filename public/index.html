@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Number Guessing Game</title>
+</head>
+<body style="background:#0f172a;color:white;font-family:Arial;">
+<div style="width:400px;margin:50px auto;padding:20px;background:#020617;border-radius:10px;text-align:center;box-shadow:0 0 20px #38bdf8;">
+
+  <h1 style="color:#38bdf8;">🎮 Number Guessing Game</h1>
+
+  <p>Select Difficulty:</p>
+  <button onclick="startGame('easy')">Easy</button>
+  <button onclick="startGame('medium')">Medium</button>
+  <button onclick="startGame('hard')">Hard</button>
+
+  <hr style="margin:20px 0;">
+
+  <input id="guess" type="number" placeholder="Your Guess" style="padding:8px;width:80%;" />
+  <br><br>
+  <button onclick="makeGuess()" style="padding:10px 20px;background:#38bdf8;border:none;cursor:pointer;">Guess</button>
+
+  <p id="result" style="margin-top:15px;font-weight:bold;"></p>
+
+  <hr style="margin:20px 0;">
+  <button onclick="showScores()" style="padding:8px 15px;background:#38bdf8;border:none;cursor:pointer;">High Scores</button>
+
+  <ul id="scoresList" style="margin-top:10px;text-align:left;"></ul>
+
+</div>
+
+<script>
+let gameStarted = false;
+
+async function startGame(level) {
+  const res = await fetch("/start", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ difficulty: level })
+  });
+  const data = await res.json();
+  document.getElementById("result").innerText = data.message;
+  gameStarted = true;
+  document.getElementById("guess").value = "";
+  document.getElementById("scoresList").innerHTML = "";
+}
+
+async function makeGuess() {
+  if(!gameStarted){
+    alert("Please start the game first!");
+    return;
+  }
+  const guess = document.getElementById("guess").value;
+  if(guess === "") {
+    alert("Enter a number!");
+    return;
+  }
+
+  const res = await fetch("/guess", {
+    method: "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ guess: Number(guess) })
+  });
+
+  const data = await res.json();
+  document.getElementById("result").innerText =
+    data.message + (data.attemptsLeft ? ` | Attempts Left: ${data.attemptsLeft}` : "");
+
+  if(data.message.includes("Win") || data.message.includes("Game Over")) {
+    gameStarted = false;
+  }
+}
+
+async function showScores() {
+  const res = await fetch("/scores");
+  const data = await res.json();
+  const ul = document.getElementById("scoresList");
+  ul.innerHTML = "";
+  data.forEach(s => {
+    const li = document.createElement("li");
+    li.textContent = `${s.difficulty.toUpperCase()} - ${s.attempts} attempts - ${new Date(s.date).toLocaleString()}`;
+    ul.appendChild(li);
+  });
+}
+</script>
+</body>
+</html>
+
